@@ -41,19 +41,15 @@ class DimCliente{
                     $sqlInsertDim->execute();
                     $sumario->setQuantidadeInclusoes();
                 } 
-                $sqlComercial->close();
-                $sqlDim->close();
-                $sqlInsertDim->close();
-                $connComercial->close();
-                $connDimensao->close();                                           
+                                                         
 
             }
         }else{// Dimensão ja contem dados
-            $sqlComercial = $connComercial-> prepare('select*from cliente');
+            $sqlComercial = $connComercial->prepare('select*from cliente');
             $sqlComercial->execute();
             $resultComercial = $sqlComercial->get_result();
             while($linhaComercial = $resultComercial->fetch_assoc()){
-                $sqlDim = $connDimensao->prepare('SELECT SK_cliente, nome, cpf, sexo, idade, rua, bairro, cidade ,uf FROM dim_cliente where cpf = ? and data_ini = is null');
+                $sqlDim = $connDimensao->prepare('SELECT SK_cliente, nome, cpf, sexo, idade, rua, bairro, cidade ,uf FROM dim_cliente where cpf = ? and data_fim  is null');
 
                 $sqlDim->bind_param('s',$linhaComercial['cpf']);
                 $sqlDim->execute();
@@ -81,16 +77,15 @@ class DimCliente{
                             $sqlUpdateDim->bind_param('si',$dataAtual, $linhaDim['SK_cliente']);
                             $sqlUpdateDim->execute();
                             if(!$sqlUpdateDim->error){
-                                $sqlInsertDim = $sqlComercial->prepare('INSERT INTO dim_cliente (cpf, nome, sexo, idade, rua, bairro, cidade, uf, data_ini) VALUES (?,?,?,?,?,?,?,?,?)');
+                                $sqlInsertDim = $connDimensao->prepare('INSERT INTO dim_cliente (cpf, nome, sexo, idade, rua, bairro, cidade, uf,data_fim) VALUES (?,?,?,?,?,?,?,?,?)');
                                 $sqlInsertDim->bind_param("sssisssss", $linhaComercial['cpf'],$linhaComercial['nome'],$linhaComercial['sexo'],$linhaComercial['idade'],
                                     $linhaComercial['rua'],$linhaComercial['bairro'],$linhaComercial['cidade'],$linhaComercial['uf'], $dataAtual);
-                                $sqlInsertDim->excute();
+                                $sqlInsertDim->execute();
                                 $sumario->setQuantidadeAlteracoes();
+                            }else{
+                                throw new \Exeception ('Error: Erro no processo de alteração !');
+
                             }
-
-                        }else{
-                            throw new \Exeception ('Error: Erro no processo de alteração !');
-
                         }
                     }
 
@@ -104,7 +99,7 @@ class DimCliente{
     }
     private function strIgual($strAtual, $strNova){
         $hashAtual = md5 ($strAtual);
-        $hashNova = md5 ($staNova);
+        $hashNova = md5 ($strNova);
         if($hashAtual === $hashNova){
             return TRUE;
         }else{
